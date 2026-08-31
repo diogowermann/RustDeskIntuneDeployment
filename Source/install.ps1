@@ -71,11 +71,22 @@ try {
     )
 
     $MsiProcess = Start-Process -FilePath "msiexec.exe" -ArgumentList $MsiArgs -Wait -PassThru
+    $MsiExitCode = $MsiProcess.ExitCode
 
-    Write-Output "MSI ExitCode: $($MsiProcess.ExitCode)"
+    Write-Output "MSI ExitCode: $MsiExitCode"
 
-    if ($MsiProcess.ExitCode -notin @(0, 3010)) {
-        throw "Failed to install MSI. ExitCode: $($MsiProcess.ExitCode)"
+    if ($MsiExitCode -eq 1618) {
+        Write-Output "Another MSI installation is currently in progress. Returning 1618 so Intune can retry."
+
+        try {
+            Stop-Transcript
+        } catch {}
+
+        exit 1618
+    }
+
+    if ($MsiExitCode -notin @(0, 3010)) {
+        throw "Failed to install MSI. ExitCode: $MsiExitCode"
     }
 
     Start-Sleep -Seconds 8
