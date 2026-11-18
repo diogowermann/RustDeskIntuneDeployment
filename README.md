@@ -21,7 +21,7 @@ This repository packages that workflow into three scripts:
 | Script | Responsibility |
 |---|---|
 | `Source/install.ps1` | Installs the MSI, writes `RustDesk2.toml` to machine and user-profile locations, installs or starts the service, logs the operation, and creates a detection marker. |
-| `Source/detect.ps1` | Validates that an executable exists, at least one machine-level configuration contains the expected host, and the deployment marker exists. |
+| `Source/detect.ps1` | Validates the installed RustDesk executable version, expected server host, and deployment marker. |
 | `Source/uninstall.ps1` | Locates an installed RustDesk MSI product and requests a silent uninstall. |
 
 The package is intended for a self-hosted RustDesk deployment, but the configuration model can be adapted to another approved RustDesk service.
@@ -138,6 +138,7 @@ $RustDeskHbbsPort = '21116'
 $RustDeskHbbrPort = '21117'
 $RustDeskApiPort  = '21114'
 $RustDeskKey      = 'SERVER-PUBLIC-KEY'
+$RustDeskVersion  = '1.4.4' # Example: match the packaged MSI
 $OrganizationName = 'orgname'
 ```
 
@@ -145,8 +146,11 @@ Edit `Source/detect.ps1` with the same host and organization identity:
 
 ```powershell
 $ExpectedHost     = 'rustdesk.example.internal'
+$RustDeskVersion  = '1.4.4' # Same minimum version as install.ps1
 $OrganizationName = 'orgname'
 ```
+
+Set the same numeric `$RustDeskVersion` in both scripts. The value is a required minimum, so newer versions are accepted; missing, unparseable, or older versions fail detection. The installer also verifies the actual executable version after MSI execution and before writing the marker. A blank version is intentionally rejected to prevent silent misconfiguration. The example version must be replaced with the validated MSI version.
 
 The values in the two scripts must remain synchronized. See [Configuration](docs/en/CONFIGURATION.md) for field definitions, data classification, configuration paths, and validation guidance.
 
@@ -220,6 +224,7 @@ sequenceDiagram
     S->>F: Validate expected host in configuration
     S->>R: Install service if missing
     S->>R: Start service
+    S->>F: Verify installed executable version
     S->>F: Create deployment marker
     S-->>I: Exit 0
 ```
@@ -234,11 +239,12 @@ The configuration is written to:
 
 ## Detection Semantics
 
-`Source/detect.ps1` returns success only when all three conditions are true:
+`Source/detect.ps1` returns success only when all four conditions are true:
 
-1. a RustDesk executable exists in a recognized installation path;
-2. at least one machine-level `RustDesk2.toml` contains the expected host;
-3. the deployment marker exists.
+1. a RustDesk executable exists (preferring the executable registered with the Windows service);
+2. its parseable `ProductVersion` is greater than or equal to `$RustDeskVersion`;
+3. at least one machine-level `RustDesk2.toml` contains the expected host;
+4. the deployment marker exists.
 
 Current detection does **not** fully validate:
 
@@ -251,6 +257,8 @@ Current detection does **not** fully validate:
 Treat Intune detection as package-state detection, not as a complete remote-access health check.
 
 <!-- IMAGE PLACEHOLDER: Add a sanitized Intune detection status or device install status screenshot here. Suggested path: docs/assets/intune-detection-status.png -->
+
+During upgrades, replace the MSI and upload both the new `.intunewin` package and the updated `detect.ps1` in the existing Intune Win32 application. Changing the package alone does not update the detection logic. The application remains manually versioned; there is no auto-updater.
 
 ## Logs and Marker
 

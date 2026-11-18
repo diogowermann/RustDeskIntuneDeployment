@@ -197,7 +197,9 @@ RustDesk permits interactive remote control. Access governance must be implement
 flowchart TD
     START[Run detect.ps1] --> EXE{Recognized executable exists?}
     EXE -- No --> FAIL[Exit 1]
-    EXE -- Yes --> CONFIG{Machine-level config contains expected host?}
+    EXE -- Yes --> VERSION{Installed ProductVersion meets minimum?}
+    VERSION -- No --> FAIL
+    VERSION -- Yes --> CONFIG{Machine-level config contains expected host?}
     CONFIG -- No --> FAIL
     CONFIG -- Yes --> MARKER{Deployment marker exists?}
     MARKER -- No --> FAIL
@@ -208,7 +210,7 @@ Detection intentionally checks package state, but it is narrower than a health p
 
 It confirms:
 
-- executable presence;
+- executable presence and the minimum installed ProductVersion (preferring the Windows service executable);
 - an expected-host string in one of three machine-level configuration files;
 - marker presence.
 
@@ -226,7 +228,7 @@ It does not confirm:
 
 The installation transcript is written under the organization-specific `IntuneLogs` directory. The MSI verbose log is written under the Intune Management Extension log directory.
 
-The marker is created only after installation, configuration validation, service verification, and metadata collection complete.
+The marker is created only after installation, verification of the actual executable version, configuration validation, service verification, and metadata collection complete.
 
 The marker includes:
 

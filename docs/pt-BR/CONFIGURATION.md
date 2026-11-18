@@ -20,6 +20,7 @@ $RustDeskHbbsPort = '21116'
 $RustDeskHbbrPort = '21117'
 $RustDeskApiPort  = '21114'
 $RustDeskKey      = 'CHAVE-PUBLICA-DO-SERVIDOR'
+$RustDeskVersion  = '1.4.4' # Exemplo; confirmar a versão do MSI
 $OrganizationName = 'orgname'
 ```
 
@@ -29,10 +30,11 @@ Edite `Source/detect.ps1`:
 
 ```powershell
 $ExpectedHost     = 'rustdesk.exemplo.interno'
+$RustDeskVersion  = '1.4.4' # Mesma versão mínima do install.ps1
 $OrganizationName = 'orgname'
 ```
 
-`$ExpectedHost` deve corresponder a `$RustDeskServer`, e `$OrganizationName` deve ser igual nos dois scripts.
+`$ExpectedHost` deve corresponder a `$RustDeskServer`, `$OrganizationName` deve ser igual, e `$RustDeskVersion` deve definir a mesma versão mínima numérica nos dois scripts. Valor vazio ou inválido é rejeitado. A versão `1.4.4` é apenas ilustrativa.
 
 ## Definição dos campos
 
@@ -45,6 +47,7 @@ $OrganizationName = 'orgname'
 | `$RustDeskKey` | Instalador | Chave pública do servidor distribuída aos clientes. | Material público de autenticação; não é segredo, mas exige integridade. |
 | `$OrganizationName` | Instalador e detecção | Define diretórios de logs e marker da organização. | Identificador da organização. |
 | `$ExpectedHost` | Detecção | Texto esperado em um `RustDesk2.toml` de máquina. | Metadado de infraestrutura interna. |
+| `$RustDeskVersion` | Instalador e detecção | Versão mínima do `ProductVersion` do executável, correspondente ao MSI empacotado. | Metadado de versão do aplicativo. |
 
 ## Chave pública e chave privada
 
@@ -178,6 +181,7 @@ Antes de cada build, compare:
 |---|---|---|
 | `$RustDeskServer` | `$ExpectedHost` | Mesmo valor. |
 | `$OrganizationName` | `$OrganizationName` | Mesmo valor. |
+| `$RustDeskVersion` | `$RustDeskVersion` | Mesma versão mínima, correspondente ao MSI validado. |
 
 Uma divergência pode causar:
 
@@ -198,6 +202,7 @@ Antes do empacotamento:
 - [ ] Nenhuma chave privada ou credencial está presente.
 - [ ] Nome da organização é seguro e consistente.
 - [ ] Host da detecção corresponde ao host do instalador.
+- [ ] RustDeskVersion corresponde ao MSI validado nos dois scripts.
 - [ ] Existe apenas um MSI em `Source/`.
 - [ ] Assinatura e hash do MSI foram verificados.
 - [ ] Bloco de senha está desabilitado.
@@ -211,7 +216,7 @@ Antes do empacotamento:
 4. validar o MSI e o diretório de origem;
 5. revisar manualmente o TOML gerado;
 6. gerar um novo `.intunewin`;
-7. atualizar versão e script de detecção no Intune;
+7. atualizar pacote, versão informativa e script de detecção enviado ao Intune;
 8. implantar no grupo piloto;
 9. validar logs, marker, serviço e conectividade;
 10. expandir somente depois da estabilidade do piloto.
@@ -219,7 +224,7 @@ Antes do empacotamento:
 ## Limitações conhecidas da configuração
 
 - Valores são duplicados entre scripts em vez de lidos de um arquivo compartilhado.
-- A detecção valida apenas o host, não todos os campos do TOML.
+- A detecção valida a versão do executável e o host, mas não todos os campos do TOML.
 - O instalador grava a mesma configuração em todos os perfis encontrados.
 - A configuração não é reconciliada continuamente após a instalação.
 - A URL da API é gerada com `http://` no script atual.

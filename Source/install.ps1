@@ -1,5 +1,22 @@
 $ErrorActionPreference = "Stop"
 
+function ConvertTo-RustDeskVersion {
+    param([string]$Value)
+
+    $ParsedVersion = $null
+    if (-not [version]::TryParse($Value, [ref]$ParsedVersion)) {
+        return $null
+    }
+
+    # Treat missing build/revision components as zero (e.g., 1.4.4 == 1.4.4.0).
+    return [version]::new(
+        $ParsedVersion.Major,
+        $ParsedVersion.Minor,
+        [Math]::Max(0, $ParsedVersion.Build),
+        [Math]::Max(0, $ParsedVersion.Revision)
+    )
+}
+
 # ============================================================
 # RustDesk - Install and configure via Intune
 # ============================================================
@@ -10,6 +27,7 @@ $RustDeskHbbsPort   = ""
 $RustDeskHbbrPort   = ""
 $RustDeskApiPort    = ""
 $RustDeskKey        = ""
+$RustDeskVersion    = "" # Minimum RustDesk version; set to the version of the packaged MSI.
 # ===================
 
 # Also adjust the organization name for log and marker paths. This is optional, but recommended to avoid conflicts with other scripts.
@@ -30,6 +48,11 @@ Start-Transcript -Path $ScriptLog -Append
 
 try {
     Write-Output "==== Starting RustDesk installation/configuration ===="
+
+    $RequiredVersion = ConvertTo-RustDeskVersion $RustDeskVersion
+    if (-not $RequiredVersion) {
+        throw "Invalid RustDeskVersion. Set a numeric version matching the packaged MSI (for example, 1.4.4)."
+    }
 
     $Msi = Get-ChildItem -Path $PSScriptRoot -Filter "*.msi" | Select-Object -First 1
 
@@ -99,13 +122,36 @@ try {
         "${env:ProgramFiles(x86)}\RustDesk\RustDesk.exe"
     )
 
-    $RustDeskExe = $PossibleExePaths | Where-Object { Test-Path $_ } | Select-Object -First 1
+    # Prefer the executable registered with the RustDesk service when it exists.
+    $ServiceExecutable = $null
+    $InstalledService = Get-CimInstance Win32_Service -Filter "Name='RustDesk'" -ErrorAction SilentlyContinue
+    if ($InstalledService -and $InstalledService.PathName -match '^\s*"?(.+?\\rustdesk\.exe)"?(?:\s|$)') {
+        $ServiceExecutable = $Matches[1]
+    }
+
+    $RustDeskExe = $null
+    if ($ServiceExecutable -and (Test-Path -LiteralPath $ServiceExecutable)) {
+        $RustDeskExe = $ServiceExecutable
+    } else {
+        $RustDeskExe = $PossibleExePaths | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+    }
 
     if (-not $RustDeskExe) {
         throw "RustDesk.exe not found after installation."
     }
 
     Write-Output "RustDesk found at: $RustDeskExe"
+
+    # A successful MSI exit code does not guarantee that the installed binary was upgraded.
+    $DetectedProductVersion = (Get-Item -LiteralPath $RustDeskExe).VersionInfo.ProductVersion
+    $InstalledVersion = ConvertTo-RustDeskVersion $DetectedProductVersion
+    if (-not $InstalledVersion) {
+        throw "Cannot parse installed RustDesk ProductVersion: $DetectedProductVersion"
+    }
+    if ($InstalledVersion -lt $RequiredVersion) {
+        throw "RustDesk upgrade incomplete: installed $DetectedProductVersion, required $RustDeskVersion."
+    }
+    Write-Output "RustDesk version verified: $DetectedProductVersion (minimum: $RustDeskVersion)"
 
     # Stop again before writing config
     Write-Output "Stopping RustDesk before writing configuration..."
@@ -253,7 +299,7 @@ key = '$RustDeskKey'
         throw "RustDesk Service not found after installation."
     }
 
-    $Version = (Get-Item $RustDeskExe).VersionInfo.ProductVersion
+    $Version = $DetectedProductVersion
 
     @"
 RustDesk configured via Intune

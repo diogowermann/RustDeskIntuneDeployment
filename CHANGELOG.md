@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Minimum RustDesk version (`$RustDeskVersion`) enforced in detection and verified after MSI installation.
+- Service-executable-first version discovery to avoid accepting stale binaries in alternate install directories.
+- Normalized three- and four-part version comparison; upgraded Intune package and detection-script guidance.
+
 - English and Portuguese portfolio-oriented READMEs.
 - English and Portuguese architecture documentation.
 - English and Portuguese configuration reference.

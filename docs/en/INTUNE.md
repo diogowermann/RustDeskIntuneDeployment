@@ -62,7 +62,7 @@ Confirm `Source/install.ps1` contains the intended:
 - server public key;
 - organization name.
 
-Confirm `Source/detect.ps1` contains the same server host and organization name.
+Confirm `Source/detect.ps1` contains the same server host, organization name, and numeric `$RustDeskVersion` as `Source/install.ps1`. Set the version to the verified MSI release (for example, `1.4.4`); empty or malformed values fail.
 
 Review the generated TOML structure in [Configuration](CONFIGURATION.md).
 
@@ -139,7 +139,8 @@ Configure:
 
 The detection succeeds when:
 
-- a recognized RustDesk executable exists;
+- a recognized RustDesk executable exists (preferring the Windows service binary);
+- its parseable `ProductVersion` is at least `$RustDeskVersion`;
 - at least one machine-level configuration contains the expected host;
 - the organization-specific marker exists.
 
@@ -274,6 +275,8 @@ Check:
 - executable exists in a recognized path;
 - one machine configuration contains the expected host;
 - detection runs as 64-bit.
+- `$RustDeskVersion` is set and matches the MSI version in both scripts.
+- installed `rustdesk.exe` `ProductVersion` meets the required minimum.
 
 ### Service is missing
 
@@ -310,14 +313,14 @@ Inspect that user's `AppData\Roaming\RustDesk\config\RustDesk2.toml`, profile pe
 1. obtain and verify the new RustDesk MSI;
 2. record version and SHA-256;
 3. replace the old MSI in `Source/`;
-4. review configuration compatibility;
+4. update `$RustDeskVersion` in both `install.ps1` and `detect.ps1`, then review configuration compatibility;
 5. rebuild `.intunewin`;
-6. update the Intune application or create a superseding application;
+6. update both the Win32 app content and the uploaded custom detection script (or create a superseding application);
 7. deploy to the pilot group;
 8. validate reinstall, service state, configurations, marker, and detection;
 9. expand through rings.
 
-The installer removes the previous marker before reinstalling, stops RustDesk, installs the MSI, rewrites configuration, and recreates the marker.
+The installer removes the previous marker before reinstalling, stops RustDesk, installs the MSI, verifies the actual executable `ProductVersion`, rewrites configuration, and recreates the marker only when the required minimum version is satisfied. An MSI success code alone is not sufficient. The version is a minimum (`>=`), so already-newer builds are accepted.
 
 ## Supersedence
 
@@ -325,7 +328,7 @@ Two patterns are possible:
 
 ### Update the existing application
 
-Replace package content and application version while preserving assignments and reporting history.
+Replace package content, the uploaded custom detection script, and application version while preserving assignments. Updating content alone does not update detection rules.
 
 ### Create a new application
 
@@ -376,6 +379,8 @@ Define retention and cleanup requirements before broad removal.
 - [ ] HBBS, HBBR, and API network paths are tested.
 - [ ] Server-side access control and audit are configured.
 - [ ] Existing and new profiles are validated.
+- [ ] Required RustDeskVersion matches the packaged MSI in both scripts.
+- [ ] Updated custom detection script is uploaded alongside updated app content.
 - [ ] Upgrade is tested.
 - [ ] Uninstall is tested.
 - [ ] Rollback package is available.

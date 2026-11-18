@@ -62,7 +62,7 @@ Confirme em `Source/install.ps1`:
 - chave pública do servidor;
 - nome da organização.
 
-Confirme em `Source/detect.ps1` o mesmo host e o mesmo nome da organização.
+Confirme em `Source/detect.ps1` o mesmo host, nome da organização e `$RustDeskVersion` numérico usado em `Source/install.ps1`. Defina a versão do MSI validado (por exemplo, `1.4.4`); valores vazios ou inválidos falham.
 
 Revise a estrutura do TOML em [Configuração](CONFIGURATION.md).
 
@@ -139,7 +139,8 @@ Configure:
 
 A detecção tem sucesso quando:
 
-- existe um executável reconhecido do RustDesk;
+- existe um executável reconhecido do RustDesk (priorizando o executável do serviço Windows);
+- o `ProductVersion` é legível e pelo menos igual a `$RustDeskVersion`;
 - ao menos uma configuração de máquina contém o host esperado;
 - existe o marker da organização.
 
@@ -272,6 +273,8 @@ Verifique:
 - executável em caminho reconhecido;
 - host presente em uma configuração de máquina;
 - execução da detecção em 64 bits.
+- `$RustDeskVersion` corresponde ao MSI nos dois scripts.
+- o `ProductVersion` do executável atende à versão mínima exigida.
 
 ### Serviço ausente
 
@@ -308,20 +311,20 @@ Inspecione o `RustDesk2.toml` no `AppData\Roaming` do usuário, as permissões d
 1. obter e validar o novo MSI;
 2. registrar versão e SHA-256;
 3. substituir o MSI anterior em `Source/`;
-4. revisar compatibilidade da configuração;
+4. atualizar `$RustDeskVersion` em `install.ps1` e `detect.ps1` e revisar compatibilidade da configuração;
 5. gerar novo `.intunewin`;
-6. atualizar o aplicativo ou criar uma aplicação de supersedência;
+6. atualizar o conteúdo do aplicativo Win32 e o script personalizado de detecção enviado ao Intune (ou criar aplicação de supersedência);
 7. implantar no piloto;
 8. validar reinstalação, serviço, configurações, marker e detecção;
 9. expandir por anéis.
 
-O instalador remove o marker anterior, para o RustDesk, instala o MSI, regrava as configurações e recria o marker.
+O instalador remove o marker anterior, para o RustDesk, instala o MSI, valida o `ProductVersion` real, regrava as configurações e recria o marker somente se a versão mínima for atendida. O código de sucesso do MSI, sozinho, não é suficiente. Versões superiores à mínima são aceitas.
 
 ## Supersedência
 
 ### Atualizar o aplicativo existente
 
-Substitua o conteúdo e a versão, preservando atribuições e histórico.
+Substitua o conteúdo, o script de detecção personalizado enviado e a versão informativa, preservando as atribuições. Alterar apenas o pacote não altera a detecção.
 
 ### Criar um novo aplicativo
 
@@ -368,6 +371,8 @@ Defina retenção e limpeza antes da remoção em escala.
 - [ ] Caminhos HBBS, HBBR e API testados.
 - [ ] Controle de acesso e auditoria no servidor configurados.
 - [ ] Perfis existentes e novos validados.
+- [ ] RustDeskVersion corresponde ao MSI nos dois scripts.
+- [ ] Script de detecção atualizado foi enviado junto ao novo pacote.
 - [ ] Atualização testada.
 - [ ] Desinstalação testada.
 - [ ] Pacote de rollback disponível.

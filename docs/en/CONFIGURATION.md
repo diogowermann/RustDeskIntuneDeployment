@@ -20,6 +20,7 @@ $RustDeskHbbsPort = '21116'
 $RustDeskHbbrPort = '21117'
 $RustDeskApiPort  = '21114'
 $RustDeskKey      = 'SERVER-PUBLIC-KEY'
+$RustDeskVersion  = '1.4.4' # Example only; match the verified MSI
 $OrganizationName = 'orgname'
 ```
 
@@ -29,10 +30,11 @@ Edit `Source/detect.ps1`:
 
 ```powershell
 $ExpectedHost     = 'rustdesk.example.internal'
+$RustDeskVersion  = '1.4.4' # Same as install.ps1
 $OrganizationName = 'orgname'
 ```
 
-`$ExpectedHost` must match `$RustDeskServer`, and `$OrganizationName` must match in both scripts.
+`$ExpectedHost` must match `$RustDeskServer`, `$OrganizationName` must match, and `$RustDeskVersion` must specify the same numeric minimum version in both scripts. A blank or invalid version is rejected. Version `1.4.4` is an example, not a claim about the bundled MSI.
 
 ## Field Definitions
 
@@ -45,6 +47,7 @@ $OrganizationName = 'orgname'
 | `$RustDeskKey` | Installer | RustDesk server public key distributed to clients. | Public authentication material; not a secret, but integrity-sensitive. |
 | `$OrganizationName` | Installer and detection | Names organization-specific log and marker directories. | Organization identifier. |
 | `$ExpectedHost` | Detection | String expected in a machine-level `RustDesk2.toml`. | Internal infrastructure metadata. |
+| `$RustDeskVersion` | Installer and detection | Minimum expected installed executable `ProductVersion` (must match the packaged MSI). | Software version metadata. |
 
 ## Public Key Versus Private Key
 
@@ -178,6 +181,7 @@ Before every build, compare:
 |---|---|---|
 | `$RustDeskServer` | `$ExpectedHost` | Same value. |
 | `$OrganizationName` | `$OrganizationName` | Same value. |
+| `$RustDeskVersion` | `$RustDeskVersion` | Same minimum version; match the validated MSI. |
 
 A mismatch can produce these outcomes:
 
@@ -198,6 +202,7 @@ Before packaging:
 - [ ] No private key or credential is present.
 - [ ] Organization name is safe and consistent.
 - [ ] Detection host matches installer host.
+- [ ] RustDeskVersion matches the verified MSI version in both scripts.
 - [ ] Only one MSI exists in `Source/`.
 - [ ] MSI signature and hash were verified.
 - [ ] Password block is disabled.
@@ -211,7 +216,7 @@ Before packaging:
 4. verify the MSI and source directory;
 5. review the generated TOML manually;
 6. build a new `.intunewin`;
-7. update the application version and detection script in Intune;
+7. update the application package, version metadata, and uploaded detection script in Intune;
 8. deploy to the pilot ring;
 9. validate logs, marker, service, and server connectivity;
 10. expand only after the pilot is stable.
@@ -219,7 +224,7 @@ Before packaging:
 ## Known Configuration Limitations
 
 - Values are duplicated across scripts instead of read from one shared configuration file.
-- Detection validates only the host, not all generated TOML fields.
+- Detection validates the executable version and expected host, but not all generated TOML fields.
 - The installer writes the same configuration to every discovered user profile.
 - Configuration is not continuously reconciled after installation.
 - The API URL is generated with `http://` in the current script.
