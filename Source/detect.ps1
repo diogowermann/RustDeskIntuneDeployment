@@ -1,6 +1,30 @@
 $ExpectedHost       = "" # Same as in install.ps1
 $OrganizationName   = "" # Same as in install.ps1
+$RustDeskVersion    = "" # Minimum RustDesk version; match install.ps1 and the packaged MSI.
 $MarkerFile         = "C:\ProgramData\$OrganizationName\IntuneMarkers\RustDesk-Configured.marker"
+
+function ConvertTo-RustDeskVersion {
+    param([string]$Value)
+
+    $ParsedVersion = $null
+    if (-not [version]::TryParse($Value, [ref]$ParsedVersion)) {
+        return $null
+    }
+
+    # Treat missing build/revision components as zero (e.g., 1.4.4 == 1.4.4.0).
+    return [version]::new(
+        $ParsedVersion.Major,
+        $ParsedVersion.Minor,
+        [Math]::Max(0, $ParsedVersion.Build),
+        [Math]::Max(0, $ParsedVersion.Revision)
+    )
+}
+
+$RequiredVersion = ConvertTo-RustDeskVersion $RustDeskVersion
+if (-not $RequiredVersion) {
+    Write-Output "Invalid RustDeskVersion. Set a numeric version (for example, 1.4.4) in detect.ps1."
+    exit 1
+}
 
 $ExePaths = @(
     "$env:ProgramFiles\RustDesk\rustdesk.exe",
@@ -15,11 +39,31 @@ $ConfigPaths = @(
     "C:\ProgramData\RustDesk\config\RustDesk2.toml"
 )
 
-$ExeExists = $false
-foreach ($Path in $ExePaths) {
-    if (Test-Path $Path) {
-        $ExeExists = $true
-        break
+$ServiceExecutable = $null
+$RustDeskService = Get-CimInstance Win32_Service -Filter "Name='RustDesk'" -ErrorAction SilentlyContinue
+if ($RustDeskService -and $RustDeskService.PathName -match '^\s*"?(.+?\\rustdesk\.exe)"?(?:\s|$)') {
+    $ServiceExecutable = $Matches[1]
+}
+
+# Prefer the executable used by the service instead of an old copy in another folder.
+$RustDeskExe = $null
+if ($ServiceExecutable -and (Test-Path -LiteralPath $ServiceExecutable)) {
+    $RustDeskExe = $ServiceExecutable
+} else {
+    $RustDeskExe = $ExePaths | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+}
+
+$VersionOk = $false
+if ($RustDeskExe) {
+    $InstalledVersionText = (Get-Item -LiteralPath $RustDeskExe).VersionInfo.ProductVersion
+    $InstalledVersion = ConvertTo-RustDeskVersion $InstalledVersionText
+    if ($InstalledVersion) {
+        $VersionOk = $InstalledVersion -ge $RequiredVersion
+        if (-not $VersionOk) {
+            Write-Output "RustDesk version $InstalledVersionText is below required $RustDeskVersion."
+        }
+    } else {
+        Write-Output "Cannot parse RustDesk ProductVersion: $InstalledVersionText"
     }
 }
 
@@ -33,10 +77,10 @@ foreach ($Path in $ConfigPaths) {
     }
 }
 
-if ($ExeExists -and $ConfigOk -and (Test-Path $MarkerFile)) {
-    Write-Output "RustDesk installed and configured correctly."
+if ($RustDeskExe -and $VersionOk -and $ConfigOk -and (Test-Path $MarkerFile)) {
+    Write-Output "RustDesk $InstalledVersionText installed and configured correctly (required: $RustDeskVersion)."
     exit 0
 }
 
-Write-Output "RustDesk not installed/configured correctly."
+Write-Output "RustDesk missing, outdated, or not configured correctly."
 exit 1

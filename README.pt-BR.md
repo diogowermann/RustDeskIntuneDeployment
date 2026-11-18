@@ -21,7 +21,7 @@ Este repositório organiza esse fluxo em três scripts:
 | Script | Responsabilidade |
 |---|---|
 | `Source/install.ps1` | Instala o MSI, grava `RustDesk2.toml` em locais de máquina e perfis de usuário, instala ou inicia o serviço, registra logs e cria um marker de detecção. |
-| `Source/detect.ps1` | Valida a existência do executável, a presença do host esperado em ao menos uma configuração de máquina e a existência do marker. |
+| `Source/detect.ps1` | Valida a versão real do executável RustDesk, a configuração do servidor esperado e a existência do marker. |
 | `Source/uninstall.ps1` | Localiza um produto MSI do RustDesk instalado e solicita sua desinstalação silenciosa. |
 
 O pacote foi projetado para uma implantação self-hosted do RustDesk, mas o modelo de configuração pode ser adaptado a outro serviço RustDesk aprovado.
@@ -138,6 +138,7 @@ $RustDeskHbbsPort = '21116'
 $RustDeskHbbrPort = '21117'
 $RustDeskApiPort  = '21114'
 $RustDeskKey      = 'CHAVE-PUBLICA-DO-SERVIDOR'
+$RustDeskVersion  = '1.4.4' # Exemplo: corresponder ao MSI empacotado
 $OrganizationName = 'orgname'
 ```
 
@@ -145,8 +146,11 @@ Edite `Source/detect.ps1` com o mesmo host e a mesma identidade da organização
 
 ```powershell
 $ExpectedHost     = 'rustdesk.exemplo.interno'
+$RustDeskVersion  = '1.4.4' # Mesma versão mínima do install.ps1
 $OrganizationName = 'orgname'
 ```
+
+A variável `$RustDeskVersion` deve conter a mesma versão numérica mínima nos dois scripts, correspondente ao MSI aprovado. Versões instaladas superiores são aceitas; versões antigas ou ilegíveis falham na detecção. O instalador também valida a versão real do executável antes de gravar o marker. Valores vazios são rejeitados, e o exemplo deve ser substituído pela versão do MSI utilizado.
 
 Os valores dos dois scripts devem permanecer sincronizados. Consulte [Configuração](docs/pt-BR/CONFIGURATION.md) para definições dos campos, classificação dos dados, caminhos de configuração e orientações de validação.
 
@@ -220,6 +224,7 @@ sequenceDiagram
     S->>F: Validar host esperado na configuração
     S->>R: Instalar serviço se ausente
     S->>R: Iniciar serviço
+    S->>F: Validar versão real do executável
     S->>F: Criar marker da implantação
     S-->>I: Retornar 0
 ```
@@ -234,11 +239,12 @@ A configuração é gravada em:
 
 ## Semântica da detecção
 
-`Source/detect.ps1` retorna sucesso apenas quando as três condições são verdadeiras:
+`Source/detect.ps1` retorna sucesso apenas quando as quatro condições são verdadeiras:
 
-1. existe um executável do RustDesk em um caminho reconhecido;
-2. ao menos um `RustDesk2.toml` de máquina contém o host esperado;
-3. o marker da implantação existe.
+1. existe um executável do RustDesk (priorizando o caminho associado ao serviço Windows);
+2. o `ProductVersion` é válido e maior ou igual a `$RustDeskVersion`;
+3. ao menos um `RustDesk2.toml` de máquina contém o host esperado;
+4. o marker da implantação existe.
 
 A detecção atual **não** valida integralmente:
 
@@ -251,6 +257,8 @@ A detecção atual **não** valida integralmente:
 Considere a detecção do Intune como validação do estado do pacote, não como um health check completo do acesso remoto.
 
 <!-- IMAGE PLACEHOLDER: Adicionar uma captura sanitizada do status de detecção ou instalação dos dispositivos no Intune. Caminho sugerido: docs/assets/intune-detection-status.png -->
+
+Para atualizar, substitua o MSI e envie ao aplicativo Win32 existente tanto o novo `.intunewin` quanto o script `detect.ps1` atualizado. Alterar apenas o pacote não atualiza a regra de detecção. A atualização continua manual e controlada pelo Intune.
 
 ## Logs e marker
 

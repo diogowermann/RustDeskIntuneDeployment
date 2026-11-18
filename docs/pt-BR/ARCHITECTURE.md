@@ -197,7 +197,9 @@ O RustDesk permite controle remoto interativo. A governança de acesso deve ser 
 flowchart TD
     START[Executar detect.ps1] --> EXE{Executável reconhecido existe?}
     EXE -- Não --> FAIL[Retornar 1]
-    EXE -- Sim --> CONFIG{Configuração de máquina contém host esperado?}
+    EXE -- Sim --> VERSION{ProductVersion atende à versão mínima?}
+    VERSION -- Não --> FAIL
+    VERSION -- Sim --> CONFIG{Configuração de máquina contém host esperado?}
     CONFIG -- Não --> FAIL
     CONFIG -- Sim --> MARKER{Marker da implantação existe?}
     MARKER -- Não --> FAIL
@@ -206,7 +208,7 @@ flowchart TD
 
 A detecção confirma:
 
-- presença do executável;
+- presença do executável e versão mínima do ProductVersion instalado, priorizando o executável do serviço Windows;
 - texto do host esperado em uma das três configurações de máquina;
 - presença do marker.
 
@@ -224,7 +226,7 @@ Ela não confirma:
 
 O transcript da instalação é gravado no diretório `IntuneLogs` da organização. O log detalhado do MSI é gravado no diretório de logs da Intune Management Extension.
 
-O marker é criado somente depois de a instalação, validação da configuração, verificação do serviço e coleta de metadados serem concluídas.
+O marker é criado somente depois da instalação, validação da versão real do executável, validação da configuração, verificação do serviço e coleta de metadados.
 
 O marker inclui:
 
