@@ -318,7 +318,7 @@ Inspecione o `RustDesk2.toml` no `AppData\Roaming` do usuário, as permissões d
 8. validar reinstalação, serviço, configurações, marker e detecção;
 9. expandir por anéis.
 
-O instalador remove o marker anterior, para o RustDesk, instala o MSI, valida o `ProductVersion` real, regrava as configurações e recria o marker somente se a versão mínima for atendida. O código de sucesso do MSI, sozinho, não é suficiente. Versões superiores à mínima são aceitas.
+O instalador remove o marker anterior, para o RustDesk, instala o MSI, valida o `ProductVersion` real, regrava as configurações e recria o marker somente se a versão mínima for atendida. O código de sucesso do MSI, sozinho, não é suficiente. Versões superiores à mínima são aceitas. O `ProductVersion` do RustDesk pode incluir metadados de compilação (por exemplo, `1.5.3+71`); os scripts comparam a parte numérica (`1.5.3`) sem rejeitar uma instalação concluída com sucesso.
 
 ## Supersedência
 

@@ -6,12 +6,24 @@ $MarkerFile         = "C:\ProgramData\$OrganizationName\IntuneMarkers\RustDesk-C
 function ConvertTo-RustDeskVersion {
     param([string]$Value)
 
-    $ParsedVersion = $null
-    if (-not [version]::TryParse($Value, [ref]$ParsedVersion)) {
+    if ([string]::IsNullOrWhiteSpace($Value)) {
         return $null
     }
 
-    # Treat missing build/revision components as zero (e.g., 1.4.4 == 1.4.4.0).
+    # RustDesk can report ProductVersion with build metadata (e.g., 1.5.3+71).
+    # Validate the full value, then compare only the numeric version components.
+    $NormalizedValue = $Value.Trim()
+    if ($NormalizedValue -notmatch '^([0-9]+\.[0-9]+(?:\.[0-9]+){0,2})(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$') {
+        return $null
+    }
+
+    $NumericVersion = $Matches[1]
+    $ParsedVersion = $null
+    if (-not [version]::TryParse($NumericVersion, [ref]$ParsedVersion)) {
+        return $null
+    }
+
+    # Treat missing build/revision components as zero (e.g., 1.5.3 == 1.5.3.0).
     return [version]::new(
         $ParsedVersion.Major,
         $ParsedVersion.Minor,
