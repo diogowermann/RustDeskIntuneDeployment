@@ -210,6 +210,9 @@ try {
 
     # Find executable
     $PossibleExePaths = @(
+        # Prefer the MSI target folder when no service is registered.
+        "$InstallFolder\rustdesk.exe",
+        "$InstallFolder\RustDesk.exe",
         "$env:ProgramFiles\RustDesk\rustdesk.exe",
         "$env:ProgramFiles\RustDesk\RustDesk.exe",
         "${env:ProgramFiles(x86)}\RustDesk\rustdesk.exe",
