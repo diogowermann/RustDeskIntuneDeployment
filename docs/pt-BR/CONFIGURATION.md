@@ -34,7 +34,7 @@ $RustDeskVersion  = '1.4.4' # Mesma versão mínima do install.ps1
 $OrganizationName = 'orgname'
 ```
 
-`$ExpectedHost` deve corresponder a `$RustDeskServer`, `$OrganizationName` deve ser igual, e `$RustDeskVersion` deve definir a mesma versão mínima numérica nos dois scripts. Valor vazio ou inválido é rejeitado. A versão `1.4.4` é apenas ilustrativa.
+`$ExpectedHost` deve corresponder a `$RustDeskServer`, `$OrganizationName` deve ser igual, e `$RustDeskVersion` deve definir a mesma versão mínima nos dois scripts. Valor vazio ou inválido é rejeitado. A versão `1.4.4` é apenas ilustrativa. O executável do RustDesk pode informar `ProductVersion` como `1.5.3+71`; o sufixo de compilação `+71` é ignorado na comparação numérica, enquanto formatos inválidos continuam rejeitados.
 
 ## Definição dos campos
 

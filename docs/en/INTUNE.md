@@ -320,7 +320,7 @@ Inspect that user's `AppData\Roaming\RustDesk\config\RustDesk2.toml`, profile pe
 8. validate reinstall, service state, configurations, marker, and detection;
 9. expand through rings.
 
-The installer removes the previous marker before reinstalling, stops RustDesk, installs the MSI, verifies the actual executable `ProductVersion`, rewrites configuration, and recreates the marker only when the required minimum version is satisfied. An MSI success code alone is not sufficient. The version is a minimum (`>=`), so already-newer builds are accepted.
+The installer removes the previous marker before reinstalling, stops RustDesk, installs the MSI, verifies the actual executable `ProductVersion`, rewrites configuration, and recreates the marker only when the required minimum version is satisfied. An MSI success code alone is not sufficient. The version is a minimum (`>=`), so already-newer builds are accepted. RustDesk's `ProductVersion` can contain build metadata (for example, `1.5.3+71`); the scripts compare its numeric component (`1.5.3`) without rejecting the successful installation.
 
 ## Supersedence
 

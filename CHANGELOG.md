@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- Accept RustDesk `ProductVersion` build metadata such as `1.5.3+71` when checking the minimum installed version in both scripts. Reject malformed versions and cover version parsing with regression tests.
+
 ### Added
 
 - Minimum RustDesk version (`$RustDeskVersion`) enforced in detection and verified after MSI installation.

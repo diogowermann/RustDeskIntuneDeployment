@@ -34,7 +34,7 @@ $RustDeskVersion  = '1.4.4' # Same as install.ps1
 $OrganizationName = 'orgname'
 ```
 
-`$ExpectedHost` must match `$RustDeskServer`, `$OrganizationName` must match, and `$RustDeskVersion` must specify the same numeric minimum version in both scripts. A blank or invalid version is rejected. Version `1.4.4` is an example, not a claim about the bundled MSI.
+`$ExpectedHost` must match `$RustDeskServer`, `$OrganizationName` must match, and `$RustDeskVersion` must specify the same minimum version in both scripts. A blank or invalid version is rejected. Version `1.4.4` is an example, not a claim about the bundled MSI. RustDesk's executable may report `ProductVersion` as `1.5.3+71`; the `+71` build metadata is ignored for numeric minimum-version comparison, while malformed values continue to fail validation.
 
 ## Field Definitions
 
