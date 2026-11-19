@@ -57,6 +57,13 @@ if ($RustDeskService -and $RustDeskService.PathName -match '^\s*"?(.+?\\rustdesk
     $ServiceExecutable = $Matches[1]
 }
 
+# Do not declare an installed RustDesk client healthy when its service is unavailable.
+$ServiceOk = [bool]($RustDeskService -and
+    $RustDeskService.State -eq "Running" -and
+    $RustDeskService.StartMode -eq "Auto" -and
+    $ServiceExecutable -and
+    (Test-Path -LiteralPath $ServiceExecutable))
+
 # Prefer the executable used by the service instead of an old copy in another folder.
 $RustDeskExe = $null
 if ($ServiceExecutable -and (Test-Path -LiteralPath $ServiceExecutable)) {
@@ -89,10 +96,10 @@ foreach ($Path in $ConfigPaths) {
     }
 }
 
-if ($RustDeskExe -and $VersionOk -and $ConfigOk -and (Test-Path $MarkerFile)) {
+if ($RustDeskExe -and $VersionOk -and $ConfigOk -and $ServiceOk -and (Test-Path $MarkerFile)) {
     Write-Output "RustDesk $InstalledVersionText installed and configured correctly (required: $RustDeskVersion)."
     exit 0
 }
 
-Write-Output "RustDesk missing, outdated, or not configured correctly."
+Write-Output "RustDesk missing, outdated, service not running/automatic, or not configured correctly."
 exit 1

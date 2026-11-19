@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Prevent indefinite waits while re-registering the RustDesk service after MSI maintenance; verify registration (60s), Running/Automatic state (40s), and the registered service executable version before creating the marker.
+- Require a running, automatically started RustDesk service in Intune detection to avoid false installed states.
+
 - Accept RustDesk `ProductVersion` build metadata such as `1.5.3+71` when checking the minimum installed version in both scripts. Reject malformed versions and cover version parsing with regression tests.
 
 ### Added
