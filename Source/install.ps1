@@ -40,11 +40,11 @@ function Ensure-RustDeskService {
     $Service = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
 
     if (-not $Service) {
-        Write-Output "Service RustDesk not found. Registering service..."
+        Write-Host "Service RustDesk not found. Registering service..."
         # Start-Process -Wait waits for the entire process tree and can hang on
         # RustDesk child processes that continue running after registration.
         $InstallProcess = Start-Process -FilePath $ExecutablePath -ArgumentList "--install-service" -PassThru -WindowStyle Hidden
-        Write-Output "RustDesk service registration launched (PID: $($InstallProcess.Id))."
+        Write-Host "RustDesk service registration launched (PID: $($InstallProcess.Id))."
 
         # Allow up to 60 seconds for the service to be registered.
         for ($Attempt = 0; $Attempt -lt 30; $Attempt++) {
@@ -55,7 +55,7 @@ function Ensure-RustDeskService {
         if (-not $Service) {
             throw "RustDesk service was not registered within 60 seconds."
         }
-        Write-Output "RustDesk service registered."
+        Write-Host "RustDesk service registered."
     }
 
     $Details = Get-CimInstance Win32_Service -Filter "Name='RustDesk'" -ErrorAction SilentlyContinue
@@ -64,11 +64,11 @@ function Ensure-RustDeskService {
     }
 
     if ($Details.StartMode -ne "Auto") {
-        Write-Output "Setting RustDesk startup type to Automatic..."
+        Write-Host "Setting RustDesk startup type to Automatic..."
         Set-Service -Name $ServiceName -StartupType Automatic -ErrorAction Stop
     }
 
-    Write-Output "Ensuring RustDesk service is running..."
+    Write-Host "Ensuring RustDesk service is running..."
     $Running = $false
     for ($Attempt = 0; $Attempt -lt 20; $Attempt++) {
         $Service = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
@@ -81,7 +81,7 @@ function Ensure-RustDeskService {
             try {
                 Start-Service -Name $ServiceName -ErrorAction Stop
             } catch {
-                Write-Output "RustDesk service start attempt failed: $($_.Exception.Message)"
+                Write-Host "RustDesk service start attempt failed: $($_.Exception.Message)"
             }
         }
         Start-Sleep -Seconds 2
@@ -107,7 +107,7 @@ function Ensure-RustDeskService {
         throw "RustDesk service executable version $ServiceProductVersion does not meet minimum $MinimumVersion."
     }
 
-    Write-Output "RustDesk service validated: Running, Automatic, version $ServiceProductVersion."
+    Write-Host "RustDesk service validated: Running, Automatic, version $ServiceProductVersion."
     return $Details
 }
 
@@ -358,7 +358,12 @@ key = '$RustDeskKey'
     # the application is installed on and could be a security risk if not handled properly.
     if ($EnablePasswordConfig) {
         Write-Output "Setting permanent password for RustDesk..."
-        & $RustDeskExe --password "Lq3720*1100"
+        # Never include shared credentials in the deployment source or public repository.
+        $PermanentPassword = [Environment]::GetEnvironmentVariable("RUSTDESK_PERMANENT_PASSWORD", "Process")
+        if ([string]::IsNullOrWhiteSpace($PermanentPassword)) {
+            throw "Password provisioning enabled without an approved process-scoped password value."
+        }
+        & $RustDeskExe --password $PermanentPassword
         Start-Sleep -Seconds 3
     }
 

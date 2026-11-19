@@ -260,7 +260,8 @@ Revise:
 - assinatura e arquitetura do MSI;
 - conteúdo do diretório `Source`;
 - código de saída do Windows Installer;
-- etapa de criação do serviço;
+- registro do serviço (até 60 segundos) e inicialização (até 40 segundos);
+- estado `Running` e inicialização `Automatic` do serviço RustDesk;
 - permissões para criar configurações nos perfis.
 
 ### Instalado, mas não detectado
@@ -274,9 +275,12 @@ Verifique:
 - host presente em uma configuração de máquina;
 - execução da detecção em 64 bits.
 - `$RustDeskVersion` corresponde ao MSI nos dois scripts.
-- o `ProductVersion` do executável atende à versão mínima exigida.
+- o `ProductVersion` do executável atende à versão mínima exigida;
+- o serviço RustDesk está em `Running` e configurado com inicialização `Automatic`.
 
 ### Serviço ausente
+
+Durante a manutenção do MSI, o RustDesk pode remover o serviço sem recriá-lo, mesmo quando o MSI termina com sucesso. O script registra o serviço sem aguardar toda a árvore de processos, verifica o registro (até 60 segundos), garante `Running` e `Automatic` (até 40 segundos) e valida a versão do executável do serviço. O marker só é criado depois dessas verificações.
 
 Verifique:
 

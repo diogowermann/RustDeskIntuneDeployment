@@ -262,7 +262,8 @@ Review:
 - MSI signature and architecture;
 - source directory contents;
 - Windows Installer exit code;
-- service installation step;
+- bounded service registration (60s) and startup (40s) checks;
+- automatic startup and Running state for the RustDesk service;
 - permissions to create profile configuration directories.
 
 ### Installed but not detected
@@ -276,9 +277,12 @@ Check:
 - one machine configuration contains the expected host;
 - detection runs as 64-bit.
 - `$RustDeskVersion` is set and matches the MSI version in both scripts.
-- installed `rustdesk.exe` `ProductVersion` meets the required minimum.
+- installed `rustdesk.exe` `ProductVersion` meets the required minimum;
+- the RustDesk service is `Running` and configured for `Automatic` startup.
 
 ### Service is missing
+
+During MSI maintenance, RustDesk can remove its service without recreating it even when the MSI returns success. The deployment script registers the service without waiting on a potentially long-lived process tree, checks registration (up to 60 seconds), ensures `Running` and `Automatic` state (up to 40 seconds), and verifies the service executable version. The marker is only created after these checks succeed.
 
 Check:
 
